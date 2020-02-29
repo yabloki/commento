@@ -178,7 +178,6 @@ func commentListHandler(w http.ResponseWriter, r *http.Request) {
 		if _, ok := modList[cr.Email]; ok {
 			cr.IsModerator = true
 		}
-		cr.Email = ""
 		_commenters[commenterHex] = cr
 	}
 

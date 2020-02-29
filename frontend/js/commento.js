@@ -285,7 +285,7 @@
     classAdd(profileEditButton, "profile-button");
     classAdd(logoutButton, "profile-button");
 
-    name.innerText = commenter.name;
+    name.innerText = commenter.name + "@" + commenter.email.slice(0, 9);
     notificationSettingsButton.innerText = "Notification Settings";
     profileEditButton.innerText = "Edit Profile";
     logoutButton.innerText = "Logout";
@@ -956,7 +956,7 @@
       if (comment.deleted) {
         name.innerText = "[deleted]";
       } else {
-        name.innerText = commenter.name;
+        name.innerText = commenter.name + "@" + commenter.email.slice(0, 9);
       }
       text.innerHTML = comment.html;
       timeago.innerHTML = timeDifference(curTime, comment.creationDate);

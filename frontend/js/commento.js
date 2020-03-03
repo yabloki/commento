@@ -274,6 +274,11 @@
     var notificationSettingsButton = create("div");
     var profileEditButton = create("div");
     var logoutButton = create("div");
+    var loggedInSelfDetails = create("div");
+    var commentsPurchaseBlock = create("div");
+    var commentsAmount = create("div");
+    var likesAmount = create("div");
+    var getCommentsButton =  create("button");
     var color = colorGet(commenter.commenterHex + "-" + commenter.name);
 
     loggedContainer.id = ID_LOGGED_CONTAINER;
@@ -282,8 +287,18 @@
     classAdd(loggedInAs, "logged-in-as");
     classAdd(name, "name");
     classAdd(notificationSettingsButton, "profile-button");
+    classAdd(commentsAmount, "comments-amount");
+    classAdd(likesAmount, "likes-amount");
+    classAdd(getCommentsButton, "get-comments-button");
+    classAdd(getCommentsButton, "button");
     classAdd(profileEditButton, "profile-button");
     classAdd(logoutButton, "profile-button");
+    classAdd(loggedInSelfDetails, "loggedin-details");
+    classAdd(commentsPurchaseBlock, "comments-purchase");
+   
+    commentsAmount.innerText = "0 Comments";
+    likesAmount.innerText = "0 Likes";
+    getCommentsButton.innerText = "Purchase Comments and Likes"
 
     name.innerText = commenter.name + "@" + commenter.email.slice(0, 9);
     notificationSettingsButton.innerText = "Notification Settings";
@@ -310,12 +325,17 @@
       classAdd(avatar, "avatar-img");
     }
 
-    append(loggedInAs, avatar);
-    append(loggedInAs, name);
+    append(loggedInAs, loggedInSelfDetails);
+    append(loggedInSelfDetails, avatar);
+    append(loggedInSelfDetails, name);
+    append(loggedInAs, commentsPurchaseBlock);
+    append(commentsPurchaseBlock, commentsAmount);
+    append(commentsPurchaseBlock, likesAmount);
+    append(commentsPurchaseBlock, getCommentsButton);
     append(loggedContainer, loggedInAs);
-    append(loggedContainer, logoutButton);
-    append(loggedContainer, profileEditButton);
-    append(loggedContainer, notificationSettingsButton);
+    append(loggedInSelfDetails, logoutButton);
+    append(loggedInSelfDetails, profileEditButton);
+    append(loggedInSelfDetails, notificationSettingsButton);
     prepend(root, loggedContainer);
 
     isAuthenticated = true;

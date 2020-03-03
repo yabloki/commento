@@ -14,12 +14,50 @@
   }
 }
 
+.commento-comments-amount {
+  display: inline;
+  color: rgb(5, 4, 4);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.commento-likes-amount {
+  display: inline;
+  color: rgb(5, 4, 4);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 2.2;
+  padding-left: 78px;
+}
+
+.commento-get-comments-button {
+  float: right;
+  background: #1971c2;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.commento-loggedin-details {
+  display: block;
+  height: 46px;
+}
+.commento-comments-purchase {
+  display: block;
+  color: rgb(5, 4, 4);
+  font-size: 16px;
+  font-weight: 700;
+  height: 48px;
+  border: dotted;
+  padding-top: 8px;
+  padding-left: 88px;
+}
+
 .commento-logged-container {
   width: 100%;
   text-align: left;
   margin-bottom: 16px;
   position: relative;
-  height: 38px;
+
 
   .commento-profile-button {
     float: right;

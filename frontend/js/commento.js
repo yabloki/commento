@@ -38,6 +38,7 @@
   var ID_COMMENTS_AREA = "commento-comments-area";
   var ID_SUPER_CONTAINER = "commento-textarea-super-container-";
   var ID_TEXTAREA_CONTAINER = "commento-textarea-container-";
+  var ID_PURCHASE_AREA = "commento-purchase-area";
   var ID_TEXTAREA = "commento-textarea-";
   var ID_ANONYMOUS_CHECKBOX = "commento-anonymous-checkbox-";
   var ID_SORT_POLICY = "commento-sort-policy-";
@@ -282,6 +283,7 @@
     var color = colorGet(commenter.commenterHex + "-" + commenter.name);
 
     loggedContainer.id = ID_LOGGED_CONTAINER;
+    commentsPurchaseBlock.id = ID_PURCHASE_AREA;
 
     classAdd(loggedContainer, "logged-container");
     classAdd(loggedInAs, "logged-in-as");
@@ -296,8 +298,9 @@
     classAdd(loggedInSelfDetails, "loggedin-details");
     classAdd(commentsPurchaseBlock, "comments-purchase");
    
-    commentsAmount.innerText = "0 Comments";
-    likesAmount.innerText = "0 Likes";
+    commentsAmount.innerText = commentify(commenter.availableComments);
+    likesAmount.innerText = likeify(commenter.availableLikes);
+
     getCommentsButton.innerText = "Purchase Comments and Likes"
 
     name.innerText = commenter.name + "@" + commenter.email.slice(0, 9);
@@ -726,7 +729,7 @@
     var textareaSuperContainer = $(ID_SUPER_CONTAINER + id);
     var textarea = $(ID_TEXTAREA + id);
     var replyButton = $(ID_REPLY + id);
-
+    var purchaseArea = $(ID_PURCHASE_AREA);
     var markdown = textarea.value;
 
     if (markdown === "") {
@@ -734,6 +737,13 @@
       return;
     } else {
       classRemove(textarea, "red-border");
+    }
+
+    if (purchaseArea.innerText.startsWith("0 Comments")) {
+      classAdd(purchaseArea, "red-border");
+      return;
+    } else {
+      classRemove(purchaseArea, "red-border");
     }
 
     var json = {
@@ -864,6 +874,21 @@
     }
   }
 
+  function commentify(score) {
+    if (score !== 1) {
+      return score + " Comments";
+    } else {
+      return score + " Comment";
+    }
+  }
+
+  function likeify(score) {
+    if (score !== 1) {
+      return score + " Likes";
+    } else {
+      return score + " Like";
+    }
+  }
 
   var sortPolicyFunctions = {
     "score-desc": function(a, b) {

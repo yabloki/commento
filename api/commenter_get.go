@@ -9,7 +9,9 @@ var commentersRowColumns string = `
 	commenters.link,
 	commenters.photo,
 	commenters.provider,
-	commenters.joinDate
+	commenters.joinDate,
+	commenters.availableComments,
+	commenters.availableLikes
 `
 
 func commentersRowScan(s sqlScanner, c *commenter) error {
@@ -21,6 +23,9 @@ func commentersRowScan(s sqlScanner, c *commenter) error {
 		&c.Photo,
 		&c.Provider,
 		&c.JoinDate,
+		&c.AvailableComments,
+		&c.AvailableLikes,
+
 	)
 }
 

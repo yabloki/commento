@@ -1,21 +1,38 @@
 package main
 
 import (
+	"database/sql"
 	"net/http"
 	"time"
 )
 
-func commentVote(commenterHex string, commentHex string, direction int) error {
+func commentVote(commenterHex string, commentHex string, likes uint, direction int) error {
 	if commentHex == "" || commenterHex == "" {
 		return errorMissingField
 	}
 
 	statement := `
+		SELECT direction
+		FROM votes
+		WHERE commenthex = $1 AND commenterhex = $2;
+	`
+	row := db.QueryRow(statement, commentHex, commenterHex)
+
+	var dir int
+	if err := row.Scan(&dir); err != sql.ErrNoRows {
+		if err != nil {
+			logger.Errorf(err.Error())
+			return errorInternal
+		}
+		return errorAlreadyVoted
+	}
+
+	statement = `
 		SELECT commenterHex
 		FROM comments
 		WHERE commentHex = $1;
 	`
-	row := db.QueryRow(statement, commentHex)
+	row = db.QueryRow(statement, commentHex)
 
 	var authorHex string
 	if err := row.Scan(&authorHex); err != nil {
@@ -37,6 +54,18 @@ func commentVote(commenterHex string, commentHex string, direction int) error {
 	_, err := db.Exec(statement, commentHex, commenterHex, direction, time.Now().UTC())
 	if err != nil {
 		logger.Errorf("error inserting/updating votes: %v", err)
+		return errorInternal
+	}
+
+	statement = `
+		UPDATE commenters
+		SET AvailableLikes = $1
+		WHERE CommenterHex = $2
+		`
+	_, err = db.Exec(statement, likes-1, commenterHex)
+
+	if err != nil {
+		logger.Errorf("error updating votes count: %v", err)
 		return errorInternal
 	}
 
@@ -67,6 +96,11 @@ func commentVoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if c.AvailableLikes == 0 {
+		bodyMarshal(w, response{"success": false, "message": errorNoLikes.Error()})
+		return
+	}
+
 	direction := 0
 	if *x.Direction > 0 {
 		direction = 1
@@ -74,7 +108,7 @@ func commentVoteHandler(w http.ResponseWriter, r *http.Request) {
 		direction = -1
 	}
 
-	if err := commentVote(c.CommenterHex, *x.CommentHex, direction); err != nil {
+	if err := commentVote(c.CommenterHex, *x.CommentHex, c.AvailableLikes, direction); err != nil {
 		bodyMarshal(w, response{"success": false, "message": err.Error()})
 		return
 	}

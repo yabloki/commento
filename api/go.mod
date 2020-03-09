@@ -11,7 +11,7 @@ require (
 	github.com/gorilla/handlers v1.4.0
 	github.com/gorilla/mux v1.6.2
 	github.com/lib/pq v0.0.0-20180523175426-90697d60dd84
-	github.com/lunny/html2md v0.0.0-20180317074532-13aaeeae9fb2
+	github.com/lunny/html2md v0.0.0-20180317074532-13aaeeae9fb2 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.0
 	github.com/op/go-logging v0.0.0-20160211212156-b2cb9fa56473
 	github.com/russross/blackfriday v1.5.1

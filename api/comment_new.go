@@ -126,7 +126,7 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 		commentsAmount = c.AvailableComments
 
 		if commentsAmount == 0 {
-			bodyMarshal(w, response{"success": false, "message": errorNoMessages.Error())})
+			bodyMarshal(w, response{"success": false, "message": errorNoMessages.Error()})
 			return
 		}
 		// cheaper than a SQL query as we already have this information

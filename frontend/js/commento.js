@@ -1584,7 +1584,7 @@
             if (commenterTokenGet() !== "anonymous") {
               remove($(ID_LOGIN));
             }
-            commentsRender();
+            // refreshAll();
             if (id !== null) {
               global.commentNew(id, resp.commenterToken, function () {
                 global.loginBoxClose();
@@ -2083,6 +2083,7 @@
     classRemove(root, "root-min-height");
 
     attrSet(loginBoxContainer, "style", "display: none");
+    refreshAll()
   }
 
 

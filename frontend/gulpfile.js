@@ -9,6 +9,7 @@ const uglify = require("gulp-uglify");
 const concat = require("gulp-concat");
 const rename = require("gulp-rename");
 const eslint = require("gulp-eslint");
+const jsonTransform = require('gulp-json-transform');
 
 const develPath = "build/devel/";
 const prodPath = "build/prod/";
@@ -21,7 +22,7 @@ const imagesGlob = imagesDir + "**/*";
 const jsDir = "js/";
 const jsGlob = jsDir + "*.js";
 const htmlGlob = "./*.html";
-
+const jsonAbipath = "../../ethereumContracts/build/contracts/SPRVault.json";
 const jsCompileMap = {
   "js/jquery.js": ["node_modules/jquery/dist/jquery.min.js"],
   "js/vue.js": ["node_modules/vue/dist/vue.min.js"],
@@ -150,6 +151,30 @@ gulp.task("images-prod", function (done) {
   done();
 });
 
+gulp.task("abi-devel", function (done) {
+  gulp.src(jsonAbipath)
+    .pipe(jsonTransform(function(json, file) {
+      var transformedJson = {
+        "abi": json.abi
+      };
+      return transformedJson;
+    }))
+    .pipe(gulp.dest(develPath + jsDir))
+  done();
+});
+
+gulp.task("abi-prod", function (done) {
+  gulp.src(jsonAbipath)
+    .pipe(jsonTransform(function(json, file) {
+      var transformedJson = {
+        "abi": json.abi
+      };
+      return transformedJson;
+    }))
+    .pipe(gulp.dest(prodPath + jsDir))
+  done();
+});
+
 gulp.task("js-devel", function (done) {
   for (let outputFile in jsCompileMap) {
     gulp.src(jsCompileMap[outputFile])
@@ -181,5 +206,5 @@ gulp.task("lint", function (done) {
   return res;
 });
 
-gulp.task("devel", gulp.parallel("scss-devel", "html-devel", "fonts-devel", "images-devel", "lint", "js-devel"));
-gulp.task("prod", gulp.parallel("scss-prod", "html-prod", "fonts-prod", "images-prod", "lint", "js-prod"));
+gulp.task("devel", gulp.parallel("scss-devel", "html-devel", "fonts-devel", "images-devel", "lint", "abi-devel", "js-devel"));
+gulp.task("prod", gulp.parallel("scss-prod", "html-prod", "fonts-prod", "images-prod", "lint", "abi-prod", "js-prod"));

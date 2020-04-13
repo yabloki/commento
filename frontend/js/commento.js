@@ -94,6 +94,7 @@
   var sortPolicy = "score-desc";
   var selfHex = undefined;
   var mobileView = null;
+  web3 = new Web3(web3.currentProvider);
 
 
   function $(id) {
@@ -260,6 +261,14 @@
     window.open(origin + "/unsubscribe?unsubscribeSecretHex=" + unsubscribeSecretHex, "_blank");
   }
 
+  function deposit(){
+    get("http://localhost:3000" + "/vault",  function(data) {
+      var vault =  new web3.eth.Contract(data.abi, data.address, {gas: 5000000})
+      vault.methods.deposit().send({from: web3.currentProvider.selectedAddress, value: web3.utils.toWei("15","finney")}, function(r){
+        console.log(r);
+      })
+    })
+  }
 
   function selfLoad(commenter, email) {
     commenters[commenter.commenterHex] = commenter;
@@ -312,6 +321,7 @@
     profileEditButton.innerText = "Edit Profile";
     logoutButton.innerText = "Logout";
 
+    onclick(getCommentsButton, deposit)
     onclick(logoutButton, global.logout);
     console.log(commenter);
     onclick(notificationSettingsButton, notificationSettings, email.unsubscribeSecretHex);

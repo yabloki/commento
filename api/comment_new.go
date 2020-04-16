@@ -45,17 +45,17 @@ func commentNew(commenterHex string, domain string, path string, parentHex strin
 		return "", errorInternal
 	}
 
-	statement = `
-		UPDATE commenters
-		SET AvailableComments = $1
-		WHERE CommenterHex = $2
-		`
-	_, err = db.Exec(statement, comments-1, commenterHex)
+	// statement = `
+	// 	UPDATE commenters
+	// 	SET AvailableComments = $1
+	// 	WHERE CommenterHex = $2
+	// 	`
+	// _, err = db.Exec(statement, comments-1, commenterHex)
 
-	if err != nil {
-		logger.Errorf("error updating comments count: %v", err)
-		return "", errorInternal
-	}
+	// if err != nil {
+	// 	logger.Errorf("error updating comments count: %v", err)
+	// 	return "", errorInternal
+	// }
 
 	return commentHex, nil
 }
@@ -105,7 +105,7 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 
 	var commenterHex string
 	var state string
-	var commentsAmount uint
+	// var commentsAmount uint
 	if *x.CommenterToken == "anonymous" {
 		commenterHex = "anonymous"
 		if isSpam(*x.Domain, getIp(r), getUserAgent(r), "Anonymous", "", "", *x.Markdown) {
@@ -123,12 +123,12 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 			bodyMarshal(w, response{"success": false, "message": err.Error()})
 			return
 		}
-		commentsAmount = c.AvailableComments
+		// commentsAmount = c.AvailableComments
 
-		if commentsAmount == 0 {
-			bodyMarshal(w, response{"success": false, "message": errorNoMessages.Error()})
-			return
-		}
+		// if commentsAmount == 0 {
+		// 	bodyMarshal(w, response{"success": false, "message": errorNoMessages.Error()})
+		// 	return
+		// }
 		// cheaper than a SQL query as we already have this information
 		isModerator := false
 		for _, mod := range d.Moderators {
@@ -155,7 +155,7 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	commentHex, err := commentNew(commenterHex, domain, path, *x.ParentHex, *x.Markdown, state, commentsAmount, time.Now().UTC())
+	commentHex, err := commentNew(commenterHex, domain, path, *x.ParentHex, *x.Markdown, state, 0, time.Now().UTC())
 	if err != nil {
 		bodyMarshal(w, response{"success": false, "message": err.Error()})
 		return

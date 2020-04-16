@@ -1,7 +1,5 @@
 package main
 
-import ()
-
 var commentersRowColumns string = `
 	commenters.commenterHex,
 	commenters.email,
@@ -10,8 +8,7 @@ var commentersRowColumns string = `
 	commenters.photo,
 	commenters.provider,
 	commenters.joinDate,
-	commenters.availableComments,
-	commenters.availableLikes
+	commenters.sprTokens
 `
 
 func commentersRowScan(s sqlScanner, c *commenter) error {
@@ -23,9 +20,7 @@ func commentersRowScan(s sqlScanner, c *commenter) error {
 		&c.Photo,
 		&c.Provider,
 		&c.JoinDate,
-		&c.AvailableComments,
-		&c.AvailableLikes,
-
+		&c.SPRTokensAmount,
 	)
 }
 
@@ -64,7 +59,7 @@ func commenterGetByEmail(provider string, email string) (commenter, error) {
 
 	var c commenter
 	if err := commentersRowScan(row, &c); err != nil {
-		// TODO: is this the only error?
+		logger.Errorf("Error retrieving commenter: %v", err)
 		return commenter{}, errorNoSuchCommenter
 	}
 

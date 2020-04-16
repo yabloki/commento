@@ -57,12 +57,11 @@ CREATE TABLE IF NOT EXISTS moderators (
 
 CREATE TABLE IF NOT EXISTS commenters (
   commenterHex             TEXT          NOT NULL  UNIQUE  PRIMARY KEY      ,
-  email                    TEXT          NOT NULL                           ,
+  email                    TEXT          NOT NULL  UNIQUE                   ,
   name                     TEXT          NOT NULL                           ,
   link                     TEXT          NOT NULL                           ,
   photo                    TEXT          NOT NULL                           ,
-  availableComments        INTEGER       NOT NULL DEFAULT 0                 ,
-  availableLikes           INTEGER       NOT NULL DEFAULT 0                 ,
+  sprTokens                BIGINT        NOT NULL DEFAULT 0                 ,
   provider                 TEXT          NOT NULL                           ,
   joinDate                 TIMESTAMP     NOT NULL                           ,
   state                    TEXT          NOT NULL  DEFAULT 'ok'

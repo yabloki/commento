@@ -311,8 +311,8 @@
     classAdd(loggedInSelfDetails, "loggedin-details");
     classAdd(commentsPurchaseBlock, "comments-purchase");
 
-    commentsAmount.innerText = commentify(commenter.availableComments);
-    likesAmount.innerText = likeify(commenter.availableLikes);
+    commentsAmount.innerText = commentify(commenter.sprTokens);
+    likesAmount.innerText = likeify(0);
 
     getCommentsButton.innerText = "Purchase Comments and Likes"
 

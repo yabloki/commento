@@ -57,17 +57,17 @@ func commentVote(commenterHex string, commentHex string, likes uint, direction i
 		return errorInternal
 	}
 
-	statement = `
-		UPDATE commenters
-		SET AvailableLikes = $1
-		WHERE CommenterHex = $2
-		`
-	_, err = db.Exec(statement, likes-1, commenterHex)
+	// statement = `
+	// 	UPDATE commenters
+	// 	SET AvailableLikes = $1
+	// 	WHERE CommenterHex = $2
+	// 	`
+	// _, err = db.Exec(statement, likes-1, commenterHex)
 
-	if err != nil {
-		logger.Errorf("error updating votes count: %v", err)
-		return errorInternal
-	}
+	// if err != nil {
+	// 	logger.Errorf("error updating votes count: %v", err)
+	// 	return errorInternal
+	// }
 
 	return nil
 }
@@ -96,10 +96,10 @@ func commentVoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if c.AvailableLikes == 0 {
-		bodyMarshal(w, response{"success": false, "message": errorNoLikes.Error()})
-		return
-	}
+	// if c.AvailableLikes == 0 {
+	// 	bodyMarshal(w, response{"success": false, "message": errorNoLikes.Error()})
+	// 	return
+	// }
 
 	direction := 0
 	if *x.Direction > 0 {
@@ -108,7 +108,7 @@ func commentVoteHandler(w http.ResponseWriter, r *http.Request) {
 		direction = -1
 	}
 
-	if err := commentVote(c.CommenterHex, *x.CommentHex, c.AvailableLikes, direction); err != nil {
+	if err := commentVote(c.CommenterHex, *x.CommentHex, 0, direction); err != nil {
 		bodyMarshal(w, response{"success": false, "message": err.Error()})
 		return
 	}

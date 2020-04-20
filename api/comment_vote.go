@@ -57,17 +57,17 @@ func commentVote(commenterHex string, commentHex string, likes uint, direction i
 		return errorInternal
 	}
 
-	// statement = `
-	// 	UPDATE commenters
-	// 	SET AvailableLikes = $1
-	// 	WHERE CommenterHex = $2
-	// 	`
-	// _, err = db.Exec(statement, likes-1, commenterHex)
+	statement = `
+		UPDATE commenters
+		SET sprtokens = sprtokens - 50::bigint
+		WHERE CommenterHex = $1
+		`
+	_, err = db.Exec(statement, commenterHex)
 
-	// if err != nil {
-	// 	logger.Errorf("error updating votes count: %v", err)
-	// 	return errorInternal
-	// }
+	if err != nil {
+		logger.Errorf("error updating SPR tokens in votes: %v", err)
+		return errorInternal
+	}
 
 	return nil
 }
@@ -96,10 +96,10 @@ func commentVoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// if c.AvailableLikes == 0 {
-	// 	bodyMarshal(w, response{"success": false, "message": errorNoLikes.Error()})
-	// 	return
-	// }
+	if c.SPRTokensAmount < 50 {
+		bodyMarshal(w, response{"success": false, "message": errorNoSPR.Error()})
+		return
+	}
 
 	direction := 0
 	if *x.Direction > 0 {

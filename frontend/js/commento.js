@@ -270,6 +270,15 @@
     })
   }
 
+  function withdraw(){
+    get("http://localhost:3000" + "/vault",  function(data) {
+      var vault =  new web3.eth.Contract(data.abi, data.address, {gas: 5000000})
+      vault.methods.withdraw().send({from: web3.currentProvider.selectedAddress}, function(r){
+        console.log(r);
+      })
+    })
+  }
+
   function selfLoad(commenter, email) {
     commenters[commenter.commenterHex] = commenter;
     selfHex = commenter.commenterHex;
@@ -287,41 +296,25 @@
     var profileEditButton = create("div");
     var logoutButton = create("div");
     var loggedInSelfDetails = create("div");
-    var commentsPurchaseBlock = create("div");
-    var commentsAmount = create("div");
-    var likesAmount = create("div");
-    var getCommentsButton = create("button");
+    var commentsPurchaseBlock = blockchainDashboardLoad(commenter)
     var color = colorGet(commenter.commenterHex + "-" + commenter.name);
 
     loggedContainer.id = ID_LOGGED_CONTAINER;
-    commentsPurchaseBlock.id = ID_PURCHASE_AREA;
-    commentsAmount.id = ID_COMMENTS_AMOUNT;
-    likesAmount.id = ID_LIKES_AMOUNT;
-
+    
     classAdd(loggedContainer, "logged-container");
     classAdd(loggedInAs, "logged-in-as");
     classAdd(name, "name");
-    classAdd(notificationSettingsButton, "profile-button");
-    classAdd(commentsAmount, "comments-amount");
-    classAdd(likesAmount, "likes-amount");
-    classAdd(getCommentsButton, "get-comments-button");
-    classAdd(getCommentsButton, "button");
+    classAdd(notificationSettingsButton, "profile-button");    
+
     classAdd(profileEditButton, "profile-button");
     classAdd(logoutButton, "profile-button");
     classAdd(loggedInSelfDetails, "loggedin-details");
-    classAdd(commentsPurchaseBlock, "comments-purchase");
-
-    commentsAmount.innerText = commentify(commenter.sprTokens);
-    likesAmount.innerText = likeify(0);
-
-    getCommentsButton.innerText = "Purchase Comments and Likes"
 
     name.innerText = commenter.name + "@" + commenter.email.slice(0, 9);
     notificationSettingsButton.innerText = "Notification Settings";
     profileEditButton.innerText = "Edit Profile";
     logoutButton.innerText = "Logout";
 
-    onclick(getCommentsButton, deposit)
     onclick(logoutButton, global.logout);
     console.log(commenter);
     onclick(notificationSettingsButton, notificationSettings, email.unsubscribeSecretHex);
@@ -346,9 +339,6 @@
     append(loggedInSelfDetails, avatar);
     append(loggedInSelfDetails, name);
     append(loggedInAs, commentsPurchaseBlock);
-    append(commentsPurchaseBlock, commentsAmount);
-    append(commentsPurchaseBlock, likesAmount);
-    append(commentsPurchaseBlock, getCommentsButton);
     append(loggedContainer, loggedInAs);
     append(loggedInSelfDetails, logoutButton);
     append(loggedInSelfDetails, profileEditButton);
@@ -397,6 +387,77 @@
     append(head, link);
   }
 
+  function blockchainDashboardLoad(commenter) {
+    var dashboard = create("div")
+    
+    var dashboardUpperBox = create("div")
+    var dashboardUpperBoxBalance = create("div")
+    var dashboardUpperBoxBalanceTitle = create("div")
+    var dashboardUpperBoxBalanceValue = create("div")
+    var dashboardUpperBoxControl = create("div")
+    var dashboardAddressBox = create("div")
+    var depositAmount = create("div")
+    var depositText = create("div")
+    var depositInputTextAreaContainer = create("div")
+    var depositInputTextArea = create("textarea")
+
+
+
+    var depositButton = create("button");
+    var depositButtonWrapper = create("button");
+    var withdrawButton = create("button");
+    var withdrawButtonWrapper = create("button");
+   
+    dashboard.id = ID_PURCHASE_AREA;
+    
+    classAdd(dashboard, "comments-purchase");
+    classAdd(dashboardUpperBox, "comments-dashboardUpperBox");
+    classAdd(dashboardUpperBoxBalance, "comments-dashboardUpperBoxBalance");
+    classAdd(dashboardUpperBoxBalanceTitle, "comments-dashboardUpperBoxBalanceTitle");
+    classAdd(dashboardUpperBoxBalanceValue, "comments-dashboardUpperBoxBalanceValue");
+    classAdd(dashboardUpperBoxControl, "comments-dashboardUpperBoxControl");
+    classAdd(dashboardAddressBox, "comments-dashboardAddressBox");
+    classAdd(depositAmount, "comments-depositAmount");
+    classAdd(depositText, "comments-depositText");
+    classAdd(depositInputTextAreaContainer, "textarea-container");
+    classAdd(depositInputTextArea, "textarea-deposit");
+    classAdd(depositButton, "get-comments-button");
+    classAdd(depositButton, "button");
+    classAdd(depositButtonWrapper, "wrapper-deposit");
+    classAdd(withdrawButton, "withdraw-button");
+    classAdd(withdrawButton, "button");
+    classAdd(withdrawButtonWrapper, "button-wrapper");
+  
+    depositButton.innerText = "Deposit"
+    onclick(depositButton, deposit)
+
+    withdrawButton.innerText = "Withdraw"
+    onclick(withdrawButton, withdraw)
+
+    dashboardUpperBoxBalanceTitle.innerText = "balance"
+    dashboardUpperBoxBalanceValue.innerText = commenter.sprTokens + " SPR"
+    depositText.innerText = "$"
+    dashboardAddressBox.innerText = "SPR token: 0x8BaDfac259121b2927B6654FEb08f70512d0fF99"
+
+    attrSet(depositInputTextArea, "placeholder", "2");
+
+    append(dashboardUpperBoxBalance, dashboardUpperBoxBalanceTitle);
+    append(dashboardUpperBoxBalance, dashboardUpperBoxBalanceValue);
+    append(dashboardUpperBox, dashboardUpperBoxBalance);
+    append(dashboardUpperBox, dashboardUpperBoxControl);
+    append(dashboard, dashboardUpperBox);
+    append(dashboard, dashboardAddressBox);
+    append(dashboardUpperBoxControl, depositAmount);
+    append(dashboardUpperBoxControl, depositButton);
+    append(dashboardUpperBoxControl, withdrawButton);
+    // append(depositButtonWrapper, depositButton);
+    // append(withdrawButtonWrapper, withdrawButton);
+    append(depositAmount, depositText);
+    append(depositAmount, depositInputTextAreaContainer);
+    append(depositInputTextAreaContainer, depositInputTextArea);
+    
+    return dashboard
+  }
 
   function footerLoad() {
     var footer = create("div");

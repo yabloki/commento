@@ -59,13 +59,13 @@ func commentVote(commenterHex string, commentHex string, likes uint, direction i
 
 	statement = `
 		UPDATE commenters
-		SET sprtokens = sprtokens - 50::bigint
+		SET cnttokens = cnttokens - 50::bigint
 		WHERE CommenterHex = $1
 		`
 	_, err = db.Exec(statement, commenterHex)
 
 	if err != nil {
-		logger.Errorf("error updating SPR tokens in votes: %v", err)
+		logger.Errorf("error updating CNT tokens in votes: %v", err)
 		return errorInternal
 	}
 
@@ -96,8 +96,8 @@ func commentVoteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if c.SPRTokensAmount < 50 {
-		bodyMarshal(w, response{"success": false, "message": errorNoSPR.Error()})
+	if c.CNTTokensAmount < 50 {
+		bodyMarshal(w, response{"success": false, "message": errorNoCNT.Error()})
 		return
 	}
 

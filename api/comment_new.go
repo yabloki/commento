@@ -47,13 +47,13 @@ func commentNew(commenterHex string, domain string, path string, parentHex strin
 
 	statement = `
 		UPDATE commenters
-		SET sprtokens = sprtokens - 100::bigint
+		SET cnttokens = cnttokens - 100::bigint
 		WHERE CommenterHex = $1
 		`
 	_, err = db.Exec(statement, commenterHex)
 
 	if err != nil {
-		logger.Errorf("error updating SPR tokens in comments: %v", err)
+		logger.Errorf("error updating CNT tokens in comments: %v", err)
 		return "", errorInternal
 	}
 
@@ -124,8 +124,8 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if c.SPRTokensAmount < 100 {
-			bodyMarshal(w, response{"success": false, "message": errorNoSPR.Error()})
+		if c.CNTTokensAmount < 100 {
+			bodyMarshal(w, response{"success": false, "message": errorNoCNT.Error()})
 			return
 		}
 

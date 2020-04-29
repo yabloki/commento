@@ -39,6 +39,7 @@
   var ID_SUPER_CONTAINER = "commento-textarea-super-container-";
   var ID_TEXTAREA_CONTAINER = "commento-textarea-container-";
   var ID_PURCHASE_AREA = "commento-purchase-area";
+  var ID_USD_AMOUNT_AREA = "commento-usdamount-area";
   var ID_COMMENTS_AMOUNT = "commento-comments-amount";
   var ID_LIKES_AMOUNT = "commento-likes-amount";
   var ID_TEXTAREA = "commento-textarea-";
@@ -94,6 +95,7 @@
   var sortPolicy = "score-desc";
   var selfHex = undefined;
   var mobileView = null;
+  var vaultData = {}
   web3 = new Web3(web3.currentProvider);
 
 
@@ -262,20 +264,31 @@
   }
 
   function deposit(){
-    get("http://localhost:3000" + "/vault",  function(data) {
-      var vault =  new web3.eth.Contract(data.abi, data.address, {gas: 5000000})
-      vault.methods.deposit().send({from: web3.currentProvider.selectedAddress, value: web3.utils.toWei("15","finney")}, function(r){
-        console.log(r);
+    var vault =  new web3.eth.Contract(vaultData.abi, vaultData.address, {gas: 5000000})
+    vault.methods.getRate().call(function(err, rate){
+      if (err) {
+        errorShow(err)
+      }
+      try {
+        var usdAmount = parseInt($(ID_USD_AMOUNT_AREA).value) * 1000000
+        var amount = web3.utils.toWei(web3.utils.toBN(usdAmount.toString())).div(web3.utils.toBN(rate)).toString()
+      } catch (err) {
+        errorShow("Enter amount (in USD) to deposit") 
+      }
+      vault.methods.deposit().send({from: web3.currentProvider.selectedAddress, value: web3.utils.toWei(amount,"szabo")}, function(err){
+        if (err) {
+          errorShow(err)
+        }
       })
     })
   }
 
   function withdraw(){
-    get("http://localhost:3000" + "/vault",  function(data) {
-      var vault =  new web3.eth.Contract(data.abi, data.address, {gas: 5000000})
-      vault.methods.withdraw().send({from: web3.currentProvider.selectedAddress}, function(r){
-        console.log(r);
-      })
+    var vault =  new web3.eth.Contract(vaultData.abi, vaultData.address, {gas: 5000000})
+    vault.methods.withdraw().send({from: web3.currentProvider.selectedAddress}, function(err){
+      if (err) {
+        errorShow(err)
+      }
     })
   }
 
@@ -316,7 +329,6 @@
     logoutButton.innerText = "Logout";
 
     onclick(logoutButton, global.logout);
-    console.log(commenter);
     onclick(notificationSettingsButton, notificationSettings, email.unsubscribeSecretHex);
     onclick(profileEditButton, profileEdit);
 
@@ -359,20 +371,22 @@
     var json = {
       "commenterToken": commenterTokenGet(),
     };
+    getVault(function () {
+      post(origin + "/api/commenter/self", json, function (resp) {
+        if (!resp.success) {
+          cookieSet("commentoCommenterToken", "anonymous");
+          call(callback);
+          return;
+        }
 
-    post(origin + "/api/commenter/self", json, function (resp) {
-      if (!resp.success) {
-        cookieSet("commentoCommenterToken", "anonymous");
+        selfLoad(resp.commenter, resp.email);
+        global.allShow();
+
         call(callback);
-        return;
-      }
-
-      selfLoad(resp.commenter, resp.email);
-      global.allShow();
-
-      call(callback);
-    });
+      });
+    })
   }
+  
 
 
   function cssLoad(file, onload) {
@@ -401,13 +415,13 @@
     var depositInputTextAreaContainer = create("div")
     var depositInputTextArea = create("textarea")
 
-
-
+    
     var depositButton = create("button");
     var depositButtonWrapper = create("button");
     var withdrawButton = create("button");
     var withdrawButtonWrapper = create("button");
-   
+    
+    depositInputTextArea.id = ID_USD_AMOUNT_AREA;
     dashboard.id = ID_PURCHASE_AREA;
     
     classAdd(dashboard, "comments-purchase");
@@ -435,9 +449,9 @@
     onclick(withdrawButton, withdraw)
 
     dashboardUpperBoxBalanceTitle.innerText = "balance"
-    dashboardUpperBoxBalanceValue.innerText = commenter.sprTokens + " SPR"
+    dashboardUpperBoxBalanceValue.innerText = commenter.cntTokens + " CNT"
     depositText.innerText = "$"
-    dashboardAddressBox.innerText = "SPR token: 0x8BaDfac259121b2927B6654FEb08f70512d0fF99"
+    dashboardAddressBox.innerText = "CNT token: " + vaultData.token
 
     attrSet(depositInputTextArea, "placeholder", "2");
 
@@ -458,6 +472,20 @@
     
     return dashboard
   }
+
+  function getVault(cb) {
+    get("http://localhost:3000" + "/vault", function (data) {
+      vaultData = { abi: data.abi, address: data.address }
+      var vault = new web3.eth.Contract(data.abi, data.address, { gas: 5000000 })
+      vault.methods.token().call(function (err, r) {
+        if (!err) {
+          vaultData["token"] = r
+        }
+        cb()
+      })
+    })
+  }
+
 
   function footerLoad() {
     var footer = create("div");

@@ -40,8 +40,8 @@
   var ID_TEXTAREA_CONTAINER = "commento-textarea-container-";
   var ID_PURCHASE_AREA = "commento-purchase-area";
   var ID_USD_AMOUNT_AREA = "commento-usdamount-area";
-  var ID_COMMENTS_AMOUNT = "commento-comments-amount";
-  var ID_LIKES_AMOUNT = "commento-likes-amount";
+  // var ID_COMMENTS_AMOUNT = "commento-comments-amount";
+  // var ID_LIKES_AMOUNT = "commento-likes-amount";
   var ID_TEXTAREA = "commento-textarea-";
   var ID_ANONYMOUS_CHECKBOX = "commento-anonymous-checkbox-";
   var ID_SORT_POLICY = "commento-sort-policy-";
@@ -262,7 +262,7 @@
   function notificationSettings(unsubscribeSecretHex) {
     window.open(origin + "/unsubscribe?unsubscribeSecretHex=" + unsubscribeSecretHex, "_blank");
   }
-
+  /* TODO deal with No "from" address specified */
   function deposit(){
     var vault =  new web3.eth.Contract(vaultData.abi, vaultData.address, {gas: 5000000})
     vault.methods.getRate().call(function(err, rate){
@@ -289,6 +289,7 @@
       if (err) {
         errorShow(err)
       }
+      //TODO need to handle timeout < 100 hours pass, 0 balance, locked account
     })
   }
 
@@ -832,7 +833,8 @@
     var textarea = $(ID_TEXTAREA + id);
     var replyButton = $(ID_REPLY + id);
     var purchaseArea = $(ID_PURCHASE_AREA);
-    var commentsAmount = $(ID_COMMENTS_AMOUNT);
+    //TODO commentsAmout  and likes take care in commento FE
+    // var commentsAmount = $(ID_COMMENTS_AMOUNT);
     var markdown = textarea.value;
 
     if (markdown === "") {
@@ -866,7 +868,7 @@
         errorHide();
       }
 
-      commentsAmount.innerText = commentify(parseInt(commentsAmount.innerText.split(" ")[0]) - 1)
+      // commentsAmount.innerText = commentify(parseInt(commentsAmount.innerText.split(" ")[0]) - 1)
       
       var message = "";
       if (resp.state === "unapproved") {
@@ -977,22 +979,6 @@
       return score + " points";
     } else {
       return score + " point";
-    }
-  }
-
-  function commentify(score) {
-    if (score !== 1) {
-      return score + " Comments";
-    } else {
-      return score + " Comment";
-    }
-  }
-
-  function likeify(score) {
-    if (score !== 1) {
-      return score + " Likes";
-    } else {
-      return score + " Like";
     }
   }
 
@@ -1400,8 +1386,8 @@
       } else {
         errorHide();
       }
-      var likesAmount = $(ID_LIKES_AMOUNT);
-      likesAmount.innerText = likeify(parseInt(likesAmount.innerText.split(" ")[0]) - 1)
+      // var likesAmount = $(ID_LIKES_AMOUNT);
+      // likesAmount.innerText = likeify(parseInt(likesAmount.innerText.split(" ")[0]) - 1)
     });
   }
 

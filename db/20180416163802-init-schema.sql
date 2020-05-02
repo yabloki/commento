@@ -82,7 +82,8 @@ CREATE TABLE IF NOT EXISTS comments (
   html                     TEXT          NOT NULL                           ,
   parentHex                TEXT          NOT NULL                           ,
   score                    INTEGER       NOT NULL  DEFAULT 0                ,
-  state                    TEXT          NOT NULL  DEFAULT 'unapproved'     , -- not a BOOLEAN because I expect more states in the future
+  state                    TEXT          NOT NULL  DEFAULT 'unapproved'     , 
+  paid                     BOOLEAN       NOT NULL  DEFAULT false            ,
   creationDate             TIMESTAMP     NOT NULL
 );
 
@@ -103,6 +104,7 @@ CREATE TABLE IF NOT EXISTS votes (
   commentHex               TEXT          NOT NULL                           ,
   commenterHex             TEXT          NOT NULL                           ,
   direction                INTEGER       NOT NULL                           ,
+  paid                     BOOLEAN       NOT NULL  DEFAULT false            ,
   voteDate                 TIMESTAMP     NOT NULL
 );
 

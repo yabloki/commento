@@ -473,7 +473,7 @@
     
     return dashboard
   }
-
+  //  TODO fix localhost
   function getVault(cb) {
     get("http://localhost:3000" + "/vault", function (data) {
       vaultData = { abi: data.abi, address: data.address }

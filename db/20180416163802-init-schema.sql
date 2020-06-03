@@ -77,6 +77,7 @@ CREATE TABLE IF NOT EXISTS comments (
   commentHex               TEXT          NOT NULL  UNIQUE  PRIMARY KEY      ,
   domain                   TEXT          NOT NULL                           ,
   path                     TEXT          NOT NULL                           ,
+  postId                   TEXT          NOT NULL                           ,
   commenterHex             TEXT          NOT NULL                           ,
   markdown                 TEXT          NOT NULL                           ,
   html                     TEXT          NOT NULL                           ,

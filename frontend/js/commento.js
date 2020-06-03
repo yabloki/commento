@@ -40,7 +40,7 @@
   var ID_TEXTAREA_CONTAINER = "commento-textarea-container-";
   var ID_PURCHASE_AREA = "commento-purchase-area";
   var ID_USD_AMOUNT_AREA = "commento-usdamount-area";
-  // var ID_COMMENTS_AMOUNT = "commento-comments-amount";
+  var ID_CNT_AMOUNT = "commento-comments-dashboardUpperBoxBalanceValue";
   // var ID_LIKES_AMOUNT = "commento-likes-amount";
   var ID_TEXTAREA = "commento-textarea-";
   var ID_ANONYMOUS_CHECKBOX = "commento-anonymous-checkbox-";
@@ -70,9 +70,10 @@
 
 
   var origin = "[[[.Origin]]]";
+  var fakeOrigin = "http://localhost:3000"
   var cdn = "[[[.CdnPrefix]]]";
   var root = null;
-  var pageId = parent.location.pathname;
+  var pageId = document.getElementById("url_full").getAttribute("url").replace(/\/$/, "");
   var cssOverride;
   var noFonts;
   var hideDeleted;
@@ -196,6 +197,18 @@
     xmlDoc.send(JSON.stringify(data));
   }
 
+  function postJson(url, data, callback) {
+    var xmlDoc = new XMLHttpRequest();
+
+    xmlDoc.open("POST", url, true);
+    xmlDoc.setRequestHeader("Content-type", "application/json");
+    xmlDoc.onload = function () {
+      callback(JSON.parse(xmlDoc.response));
+    };
+
+    xmlDoc.send(JSON.stringify(data));
+  }
+
 
   function get(url, callback) {
     var xmlDoc = new XMLHttpRequest();
@@ -262,6 +275,8 @@
   function notificationSettings(unsubscribeSecretHex) {
     window.open(origin + "/unsubscribe?unsubscribeSecretHex=" + unsubscribeSecretHex, "_blank");
   }
+
+
   /* TODO deal with No "from" address specified */
   function deposit(){
     var vault =  new web3.eth.Contract(vaultData.abi, vaultData.address, {gas: 5000000})
@@ -283,6 +298,7 @@
     })
   }
 
+
   function withdraw(){
     var vault =  new web3.eth.Contract(vaultData.abi, vaultData.address, {gas: 5000000})
     vault.methods.withdraw().send({from: web3.currentProvider.selectedAddress}, function(err){
@@ -292,6 +308,7 @@
       //TODO need to handle timeout < 100 hours pass, 0 balance, locked account
     })
   }
+
 
   function selfLoad(commenter, email) {
     commenters[commenter.commenterHex] = commenter;
@@ -372,7 +389,7 @@
     var json = {
       "commenterToken": commenterTokenGet(),
     };
-    getVault(function () {
+    postDetails(function () {
       post(origin + "/api/commenter/self", json, function (resp) {
         if (!resp.success) {
           cookieSet("commentoCommenterToken", "anonymous");
@@ -473,10 +490,13 @@
     
     return dashboard
   }
-  //  TODO fix localhost
-  function getVault(cb) {
-    get("http://localhost:3000" + "/vault", function (data) {
-      vaultData = { abi: data.abi, address: data.address }
+
+  function postDetails(cb) {
+    var json = {
+      "postId":  document.getElementById("post_id").getAttribute("post_id").replace(/\/$/, ""),
+    };
+    postJson(fakeOrigin + "/post", json, function (data) {
+      vaultData = { abi: data.abi, address: data.address, price: data.price }
       var vault = new web3.eth.Contract(data.abi, data.address, { gas: 5000000 })
       vault.methods.token().call(function (err, r) {
         if (!err) {
@@ -833,8 +853,9 @@
     var textarea = $(ID_TEXTAREA + id);
     var replyButton = $(ID_REPLY + id);
     var purchaseArea = $(ID_PURCHASE_AREA);
-    //TODO commentsAmout  and likes take care in commento FE
-    // var commentsAmount = $(ID_COMMENTS_AMOUNT);
+    var cntAmountElement = document.getElementsByClassName(ID_CNT_AMOUNT)[0]
+    var cntAmount = parseInt(cntAmountElement.innerText.split(" ")[0])
+    var commentPrice = parseInt(vaultData.price)
     var markdown = textarea.value;
 
     if (markdown === "") {
@@ -844,7 +865,7 @@
       classRemove(textarea, "red-border");
     }
 
-    if (purchaseArea.innerText.startsWith("0 Comments")) {
+    if (cntAmount < commentPrice) {
       classAdd(purchaseArea, "red-border");
       errorShow("No available comments");
       return;
@@ -854,6 +875,7 @@
 
     var json = {
       "commenterToken": commenterToken,
+      "postId" : document.getElementById("post_id").getAttribute("post_id").replace(/\/$/, ""),
       "domain": parent.location.host,
       "path": pageId,
       "parentHex": id,
@@ -868,7 +890,7 @@
         errorHide();
       }
 
-      // commentsAmount.innerText = commentify(parseInt(commentsAmount.innerText.split(" ")[0]) - 1)
+      cntAmountElement.innerText = String(cntAmount - commentPrice) + " CNT";
       
       var message = "";
       if (resp.state === "unapproved") {

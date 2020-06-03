@@ -1,18 +1,20 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 // Take `creationDate` as a param because comment import (from Disqus, for
 // example) will require a custom time.
-func commentNew(commenterHex string, domain string, path string, parentHex string, markdown string, state string, comments uint, creationDate time.Time) (string, error) {
+func commentNew(commenterHex string, domain string, path string, parentHex string, markdown string, state string, postID string, commentPrice uint64, creationDate time.Time) (string, error) {
 	// path is allowed to be empty
-	if commenterHex == "" || domain == "" || parentHex == "" || markdown == "" || state == "" {
+	if commenterHex == "" || domain == "" || parentHex == "" || markdown == "" || state == "" || postID == "" {
 		return "", errorMissingField
 	}
-
 	p, err := pageGet(domain, path)
 	if err != nil {
 		logger.Errorf("cannot get page attributes: %v", err)
@@ -36,10 +38,10 @@ func commentNew(commenterHex string, domain string, path string, parentHex strin
 
 	statement := `
 		INSERT INTO
-		comments (commentHex, domain, path, commenterHex, parentHex, markdown, html, creationDate, state)
-		VALUES   ($1,         $2,     $3,   $4,           $5,        $6,       $7,   $8,           $9   );
+		comments (commentHex, domain, path, postID, commenterHex, parentHex, markdown, html, creationDate, state)
+		VALUES   ($1,         $2,     $3,     $10,       $4,         $5,        $6,     $7,      $8,         $9 );
 	`
-	_, err = db.Exec(statement, commentHex, domain, path, commenterHex, parentHex, markdown, html, creationDate, state)
+	_, err = db.Exec(statement, commentHex, domain, path, commenterHex, parentHex, markdown, html, creationDate, state, postID)
 	if err != nil {
 		logger.Errorf("cannot insert comment: %v", err)
 		return "", errorInternal
@@ -47,10 +49,10 @@ func commentNew(commenterHex string, domain string, path string, parentHex strin
 
 	statement = `
 		UPDATE commenters
-		SET cnttokens = cnttokens - 100::bigint
-		WHERE CommenterHex = $1
+		SET cnttokens = cnttokens - $1::bigint
+		WHERE CommenterHex = $2
 		`
-	_, err = db.Exec(statement, commenterHex)
+	_, err = db.Exec(statement, commentPrice, commenterHex)
 
 	if err != nil {
 		logger.Errorf("error updating CNT tokens in comments: %v", err)
@@ -60,11 +62,41 @@ func commentNew(commenterHex string, domain string, path string, parentHex strin
 	return commentHex, nil
 }
 
+func getCommentPrice(postID string) (uint64, error) {
+	message := map[string]interface{}{
+		"postId": postID,
+	}
+
+	bytesRepresentation, err := json.Marshal(message)
+	if err != nil {
+		logger.Errorf("error marshalizing postid payload json: %v", err)
+		return 0, errorInternal
+	}
+
+	//TODO probably need to use something like os.Getenv("ORIGIN")
+	resp, err := http.Post("http://localhost:3000/post", "application/json", bytes.NewBuffer(bytesRepresentation))
+	if err != nil {
+		logger.Errorf("error getting price of comment: %v", err)
+		return 0, errorInternal
+	}
+
+	var result map[string]string
+
+	json.NewDecoder(resp.Body).Decode(&result)
+	i, err := strconv.Atoi(result["price"])
+	if err != nil {
+		logger.Errorf("error parsing price: %v", err)
+		return 0, errorInternal
+	}
+	return uint64(i), nil
+}
+
 func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 	type request struct {
 		CommenterToken *string `json:"commenterToken"`
 		Domain         *string `json:"domain"`
 		Path           *string `json:"path"`
+		PostID         *string `json:"postId"`
 		ParentHex      *string `json:"parentHex"`
 		Markdown       *string `json:"markdown"`
 	}
@@ -104,6 +136,7 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 	// |        no |        no |                       |                no |                      |        no |
 
 	var commenterHex string
+	var commentPriceWrapper uint64
 	var state string
 
 	if *x.CommenterToken == "anonymous" {
@@ -124,7 +157,15 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if c.CNTTokensAmount < 100 {
+		commentPrice, err := getCommentPrice(*x.PostID)
+		if err != nil {
+			bodyMarshal(w, response{"success": false, "message": err.Error()})
+			return
+		}
+		// i don't know what is going on with scope in golang, leave me alone
+		commentPriceWrapper = commentPrice
+
+		if c.CNTTokensAmount < commentPrice {
 			bodyMarshal(w, response{"success": false, "message": errorNoCNT.Error()})
 			return
 		}
@@ -154,8 +195,7 @@ func commentNewHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
-	commentHex, err := commentNew(commenterHex, domain, path, *x.ParentHex, *x.Markdown, state, 0, time.Now().UTC())
+	commentHex, err := commentNew(commenterHex, domain, path, *x.ParentHex, *x.Markdown, state, *x.PostID, commentPriceWrapper, time.Now().UTC())
 	if err != nil {
 		bodyMarshal(w, response{"success": false, "message": err.Error()})
 		return

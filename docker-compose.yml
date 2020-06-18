@@ -8,6 +8,6 @@ services:
     ports:
       - 80:8080
     environment:
-      COMMENTO_ORIGIN: http://commento.2cents.media:8080
+      COMMENTO_ORIGIN: http://commento.2cents.media
       COMMENTO_PORT: 8080
       COMMENTO_POSTGRES: postgres://postgres:epCJ3dLQxaeqcU3aLcesUkhq@10.78.65.3:5432/commento?sslmode=disable

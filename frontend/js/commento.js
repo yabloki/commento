@@ -1,4 +1,4 @@
-(function(global, document) {
+(function (global, document) {
   "use strict";
 
   // Do not use other files like utils.js and http.js in the gulpfile to build
@@ -38,6 +38,10 @@
   var ID_COMMENTS_AREA = "commento-comments-area";
   var ID_SUPER_CONTAINER = "commento-textarea-super-container-";
   var ID_TEXTAREA_CONTAINER = "commento-textarea-container-";
+  var ID_PURCHASE_AREA = "commento-purchase-area";
+  var ID_USD_AMOUNT_AREA = "commento-usdamount-area";
+  var ID_CNT_AMOUNT = "commento-comments-dashboardUpperBoxBalanceValue";
+  // var ID_LIKES_AMOUNT = "commento-likes-amount";
   var ID_TEXTAREA = "commento-textarea-";
   var ID_ANONYMOUS_CHECKBOX = "commento-anonymous-checkbox-";
   var ID_SORT_POLICY = "commento-sort-policy-";
@@ -66,9 +70,10 @@
 
 
   var origin = "[[[.Origin]]]";
+  var fakeOrigin = "http://localhost:3000"
   var cdn = "[[[.CdnPrefix]]]";
   var root = null;
-  var pageId = parent.location.pathname;
+  var pageId = document.getElementById("url_full").getAttribute("url").replace(/\/$/, "");
   var cssOverride;
   var noFonts;
   var hideDeleted;
@@ -91,6 +96,8 @@
   var sortPolicy = "score-desc";
   var selfHex = undefined;
   var mobileView = null;
+  var vaultData = {}
+  web3 = new Web3(web3.currentProvider);
 
 
   function $(id) {
@@ -148,7 +155,7 @@
     if (attr === undefined) {
       return undefined;
     }
-    
+
     return attr.value;
   }
 
@@ -167,7 +174,7 @@
 
 
   function onclick(node, f, arg) {
-    node.addEventListener("click", function() {
+    node.addEventListener("click", function () {
       f(arg);
     }, false);
   }
@@ -183,7 +190,19 @@
 
     xmlDoc.open("POST", url, true);
     xmlDoc.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xmlDoc.onload = function() {
+    xmlDoc.onload = function () {
+      callback(JSON.parse(xmlDoc.response));
+    };
+
+    xmlDoc.send(JSON.stringify(data));
+  }
+
+  function postJson(url, data, callback) {
+    var xmlDoc = new XMLHttpRequest();
+
+    xmlDoc.open("POST", url, true);
+    xmlDoc.setRequestHeader("Content-type", "application/json");
+    xmlDoc.onload = function () {
       callback(JSON.parse(xmlDoc.response));
     };
 
@@ -195,7 +214,7 @@
     var xmlDoc = new XMLHttpRequest();
 
     xmlDoc.open("GET", url, true);
-    xmlDoc.onload = function() {
+    xmlDoc.onload = function () {
       callback(JSON.parse(xmlDoc.response));
     };
 
@@ -204,7 +223,7 @@
 
 
   function call(callback) {
-    if (typeof(callback) === "function") {
+    if (typeof (callback) === "function") {
       callback();
     }
   }
@@ -239,7 +258,7 @@
   }
 
 
-  global.logout = function() {
+  global.logout = function () {
     cookieSet("commentoCommenterToken", "anonymous");
     isAuthenticated = false;
     isModerator = false;
@@ -255,6 +274,39 @@
 
   function notificationSettings(unsubscribeSecretHex) {
     window.open(origin + "/unsubscribe?unsubscribeSecretHex=" + unsubscribeSecretHex, "_blank");
+  }
+
+
+  /* TODO deal with No "from" address specified */
+  function deposit(){
+    var vault =  new web3.eth.Contract(vaultData.abi, vaultData.address, {gas: 5000000})
+    vault.methods.getRate().call(function(err, rate){
+      if (err) {
+        errorShow(err)
+      }
+      try {
+        var usdAmount = parseInt($(ID_USD_AMOUNT_AREA).value) * 1000000
+        var amount = web3.utils.toWei(web3.utils.toBN(usdAmount.toString())).div(web3.utils.toBN(rate)).toString()
+      } catch (err) {
+        errorShow("Enter amount (in USD) to deposit") 
+      }
+      vault.methods.deposit().send({from: web3.currentProvider.selectedAddress, value: web3.utils.toWei(amount,"szabo")}, function(err){
+        if (err) {
+          errorShow(err)
+        }
+      })
+    })
+  }
+
+
+  function withdraw(){
+    var vault =  new web3.eth.Contract(vaultData.abi, vaultData.address, {gas: 5000000})
+    vault.methods.withdraw().send({from: web3.currentProvider.selectedAddress}, function(err){
+      if (err) {
+        errorShow(err)
+      }
+      //TODO need to handle timeout < 100 hours pass, 0 balance, locked account
+    })
   }
 
 
@@ -274,24 +326,27 @@
     var notificationSettingsButton = create("div");
     var profileEditButton = create("div");
     var logoutButton = create("div");
+    var loggedInSelfDetails = create("div");
+    var commentsPurchaseBlock = blockchainDashboardLoad(commenter)
     var color = colorGet(commenter.commenterHex + "-" + commenter.name);
 
     loggedContainer.id = ID_LOGGED_CONTAINER;
-
+    
     classAdd(loggedContainer, "logged-container");
     classAdd(loggedInAs, "logged-in-as");
     classAdd(name, "name");
-    classAdd(notificationSettingsButton, "profile-button");
+    classAdd(notificationSettingsButton, "profile-button");    
+
     classAdd(profileEditButton, "profile-button");
     classAdd(logoutButton, "profile-button");
+    classAdd(loggedInSelfDetails, "loggedin-details");
 
-    name.innerText = commenter.name;
+    name.innerText = commenter.name + "@" + commenter.email.slice(0, 9);
     notificationSettingsButton.innerText = "Notification Settings";
     profileEditButton.innerText = "Edit Profile";
     logoutButton.innerText = "Logout";
 
     onclick(logoutButton, global.logout);
-    console.log(commenter);
     onclick(notificationSettingsButton, notificationSettings, email.unsubscribeSecretHex);
     onclick(profileEditButton, profileEdit);
 
@@ -310,14 +365,15 @@
       classAdd(avatar, "avatar-img");
     }
 
-    append(loggedInAs, avatar);
-    append(loggedInAs, name);
+    append(loggedInAs, loggedInSelfDetails);
+    append(loggedInSelfDetails, avatar);
+    append(loggedInSelfDetails, name);
+    append(loggedInAs, commentsPurchaseBlock);
     append(loggedContainer, loggedInAs);
-    append(loggedContainer, logoutButton);
-    append(loggedContainer, profileEditButton);
-    append(loggedContainer, notificationSettingsButton);
+    append(loggedInSelfDetails, logoutButton);
+    append(loggedInSelfDetails, profileEditButton);
+    // append(loggedInSelfDetails, notificationSettingsButton);
     prepend(root, loggedContainer);
-
     isAuthenticated = true;
   }
 
@@ -333,20 +389,22 @@
     var json = {
       "commenterToken": commenterTokenGet(),
     };
+    postDetails(function () {
+      post(origin + "/api/commenter/self", json, function (resp) {
+        if (!resp.success) {
+          cookieSet("commentoCommenterToken", "anonymous");
+          call(callback);
+          return;
+        }
 
-    post(origin + "/api/commenter/self", json, function(resp) {
-      if (!resp.success) {
-        cookieSet("commentoCommenterToken", "anonymous");
+        selfLoad(resp.commenter, resp.email);
+        global.allShow();
+
         call(callback);
-        return;
-      }
-
-      selfLoad(resp.commenter, resp.email);
-      global.allShow();
-
-      call(callback);
-    });
+      });
+    })
   }
+  
 
 
   function cssLoad(file, onload) {
@@ -359,6 +417,94 @@
     attrSet(link, "onload", onload);
 
     append(head, link);
+  }
+
+  function blockchainDashboardLoad(commenter) {
+    var dashboard = create("div")
+    
+    var dashboardUpperBox = create("div")
+    var dashboardUpperBoxBalance = create("div")
+    var dashboardUpperBoxBalanceTitle = create("div")
+    var dashboardUpperBoxBalanceValue = create("div")
+    var dashboardUpperBoxControl = create("div")
+    var dashboardAddressBox = create("div")
+    var depositAmount = create("div")
+    var depositText = create("div")
+    var depositInputTextAreaContainer = create("div")
+    var depositInputTextArea = create("textarea")
+
+    
+    var depositButton = create("button");
+    var depositButtonWrapper = create("button");
+    var withdrawButton = create("button");
+    var withdrawButtonWrapper = create("button");
+    
+    depositInputTextArea.id = ID_USD_AMOUNT_AREA;
+    dashboard.id = ID_PURCHASE_AREA;
+    
+    classAdd(dashboard, "comments-purchase");
+    classAdd(dashboardUpperBox, "comments-dashboardUpperBox");
+    classAdd(dashboardUpperBoxBalance, "comments-dashboardUpperBoxBalance");
+    classAdd(dashboardUpperBoxBalanceTitle, "comments-dashboardUpperBoxBalanceTitle");
+    classAdd(dashboardUpperBoxBalanceValue, "comments-dashboardUpperBoxBalanceValue");
+    classAdd(dashboardUpperBoxControl, "comments-dashboardUpperBoxControl");
+    classAdd(dashboardAddressBox, "comments-dashboardAddressBox");
+    classAdd(depositAmount, "comments-depositAmount");
+    classAdd(depositText, "comments-depositText");
+    classAdd(depositInputTextAreaContainer, "textarea-container");
+    classAdd(depositInputTextArea, "textarea-deposit");
+    classAdd(depositButton, "get-comments-button");
+    classAdd(depositButton, "button");
+    classAdd(depositButtonWrapper, "wrapper-deposit");
+    classAdd(withdrawButton, "withdraw-button");
+    classAdd(withdrawButton, "button");
+    classAdd(withdrawButtonWrapper, "button-wrapper");
+  
+    depositButton.innerText = "Deposit"
+    onclick(depositButton, deposit)
+
+    withdrawButton.innerText = "Withdraw"
+    onclick(withdrawButton, withdraw)
+
+    dashboardUpperBoxBalanceTitle.innerText = "balance"
+    dashboardUpperBoxBalanceValue.innerText = commenter.cntTokens + " CNT"
+    depositText.innerText = "$"
+    dashboardAddressBox.innerText = "CNT token: " + vaultData.token
+
+    attrSet(depositInputTextArea, "placeholder", "2");
+
+    append(dashboardUpperBoxBalance, dashboardUpperBoxBalanceTitle);
+    append(dashboardUpperBoxBalance, dashboardUpperBoxBalanceValue);
+    append(dashboardUpperBox, dashboardUpperBoxBalance);
+    append(dashboardUpperBox, dashboardUpperBoxControl);
+    append(dashboard, dashboardUpperBox);
+    append(dashboard, dashboardAddressBox);
+    append(dashboardUpperBoxControl, depositAmount);
+    append(dashboardUpperBoxControl, depositButton);
+    append(dashboardUpperBoxControl, withdrawButton);
+    // append(depositButtonWrapper, depositButton);
+    // append(withdrawButtonWrapper, withdrawButton);
+    append(depositAmount, depositText);
+    append(depositAmount, depositInputTextAreaContainer);
+    append(depositInputTextAreaContainer, depositInputTextArea);
+    
+    return dashboard
+  }
+
+  function postDetails(cb) {
+    var json = {
+      "postId":  document.getElementById("post_id").getAttribute("post_id").replace(/\/$/, ""),
+    };
+    postJson(fakeOrigin + "/post", json, function (data) {
+      vaultData = { abi: data.abi, address: data.address, price: data.price }
+      var vault = new web3.eth.Contract(data.abi, data.address, { gas: 5000000 })
+      vault.methods.token().call(function (err, r) {
+        if (!err) {
+          vaultData["token"] = r
+        }
+        cb()
+      })
+    })
   }
 
 
@@ -395,7 +541,7 @@
       "path": pageId,
     };
 
-    post(origin + "/api/comment/list", json, function(resp) {
+    post(origin + "/api/comment/list", json, function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         return;
@@ -450,7 +596,7 @@
 
 
   function autoExpander(el) {
-    return function() {
+    return function () {
       el.style.height = "";
       el.style.height = Math.min(Math.max(el.scrollHeight, 75), 400) + "px";
     }
@@ -702,11 +848,14 @@
   }
 
 
-  global.commentNew = function(id, commenterToken, callback) {
+  global.commentNew = function (id, commenterToken, callback) {
     var textareaSuperContainer = $(ID_SUPER_CONTAINER + id);
     var textarea = $(ID_TEXTAREA + id);
     var replyButton = $(ID_REPLY + id);
-
+    var purchaseArea = $(ID_PURCHASE_AREA);
+    var cntAmountElement = document.getElementsByClassName(ID_CNT_AMOUNT)[0]
+    var cntAmount = parseInt(cntAmountElement.innerText.split(" ")[0])
+    var commentPrice = parseInt(vaultData.price)
     var markdown = textarea.value;
 
     if (markdown === "") {
@@ -716,15 +865,24 @@
       classRemove(textarea, "red-border");
     }
 
+    if (cntAmount < commentPrice) {
+      classAdd(purchaseArea, "red-border");
+      errorShow("No available comments");
+      return;
+    } else {
+      classRemove(purchaseArea, "red-border");
+    }
+
     var json = {
       "commenterToken": commenterToken,
+      "postId" : document.getElementById("post_id").getAttribute("post_id").replace(/\/$/, ""),
       "domain": parent.location.host,
       "path": pageId,
       "parentHex": id,
       "markdown": markdown,
     };
 
-    post(origin + "/api/comment/new", json, function(resp) {
+    post(origin + "/api/comment/new", json, function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         return;
@@ -732,6 +890,8 @@
         errorHide();
       }
 
+      cntAmountElement.innerText = String(cntAmount - commentPrice) + " CNT";
+      
       var message = "";
       if (resp.state === "unapproved") {
         message = "Your comment is under moderation.";
@@ -742,7 +902,7 @@
       if (message !== "") {
         prepend($(ID_SUPER_CONTAINER + id), messageCreate(message));
       }
-      
+
       var commenterHex = selfHex;
       if (commenterHex === undefined || commenterToken === "anonymous") {
         commenterHex = "anonymous";
@@ -824,14 +984,14 @@
       return Math.round(elapsed / 1000) + " seconds ago";
     } else if (elapsed < msPerHour) {
       return Math.round(elapsed / msPerMinute) + " minutes ago";
-    } else if (elapsed < msPerDay ) {
-      return Math.round(elapsed / msPerHour ) + " hours ago";
+    } else if (elapsed < msPerDay) {
+      return Math.round(elapsed / msPerHour) + " hours ago";
     } else if (elapsed < msPerMonth) {
       return Math.round(elapsed / msPerDay) + " days ago";
     } else if (elapsed < msPerYear) {
       return Math.round(elapsed / msPerMonth) + " months ago";
     } else {
-      return Math.round(elapsed / msPerYear ) + " years ago";
+      return Math.round(elapsed / msPerYear) + " years ago";
     }
   }
 
@@ -844,19 +1004,18 @@
     }
   }
 
-
   var sortPolicyFunctions = {
-    "score-desc": function(a, b) {
+    "score-desc": function (a, b) {
       return b.score - a.score;
     },
-    "creationdate-desc": function(a, b) {
+    "creationdate-desc": function (a, b) {
       if (a.creationDate < b.creationDate) {
         return 1;
       } else {
         return -1;
       }
     },
-    "creationdate-asc": function(a, b) {
+    "creationdate-asc": function (a, b) {
       if (a.creationDate < b.creationDate) {
         return -1;
       } else {
@@ -872,7 +1031,7 @@
       return null;
     }
 
-    cur.sort(function(a, b) {
+    cur.sort(function (a, b) {
       if (!a.deleted && a.commentHex === stickyCommentHex) {
         return -Infinity;
       } else if (!b.deleted && b.commentHex === stickyCommentHex) {
@@ -884,7 +1043,7 @@
 
     var curTime = (new Date()).getTime();
     var cards = create("div");
-    cur.forEach(function(comment) {
+    cur.forEach(function (comment) {
       var commenter = commenters[comment.commenterHex];
       var avatar;
       var card = create("div");
@@ -956,7 +1115,7 @@
       if (comment.deleted) {
         name.innerText = "[deleted]";
       } else {
-        name.innerText = commenter.name;
+        name.innerText = commenter.name + "@" + commenter.email.slice(0, 9);
       }
       text.innerHTML = comment.html;
       timeago.innerHTML = timeDifference(curTime, comment.creationDate);
@@ -1074,14 +1233,14 @@
       if (isModerator && comment.state !== "approved") {
         append(options, approve);
       }
-      
+
       if (!comment.deleted && (!isModerator && stickyCommentHex === comment.commentHex)) {
         append(options, sticky);
       }
 
-      attrSet(options, "style", "width: " + ((options.childNodes.length+1)*32) + "px;");
+      attrSet(options, "style", "width: " + ((options.childNodes.length + 1) * 32) + "px;");
       for (var i = 0; i < options.childNodes.length; i++) {
-        attrSet(options.childNodes[i], "style", "right: " + (i*32) + "px;");
+        attrSet(options.childNodes[i], "style", "right: " + (i * 32) + "px;");
       }
 
       append(subtitle, score);
@@ -1125,13 +1284,13 @@
   }
 
 
-  global.commentApprove = function(commentHex) {
+  global.commentApprove = function (commentHex) {
     var json = {
       "commenterToken": commenterTokenGet(),
       "commentHex": commentHex,
     }
 
-    post(origin + "/api/comment/approve", json, function(resp) {
+    post(origin + "/api/comment/approve", json, function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         return
@@ -1150,7 +1309,7 @@
   }
 
 
-  global.commentDelete = function(commentHex) {
+  global.commentDelete = function (commentHex) {
     if (!confirm("Are you sure you want to delete this comment?")) {
       return;
     }
@@ -1160,7 +1319,7 @@
       "commentHex": commentHex,
     }
 
-    post(origin + "/api/comment/delete", json, function(resp) {
+    post(origin + "/api/comment/delete", json, function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         return
@@ -1202,7 +1361,7 @@
   }
 
 
-  global.vote = function(data) {
+  global.vote = function (data) {
     var commentHex = data[0];
     var oldDirection = data[1][0];
     var newDirection = data[1][1];
@@ -1231,17 +1390,26 @@
 
     score.innerText = scorify(parseInt(score.innerText.replace(/[^\d-.]/g, "")) + newDirection - oldDirection);
 
-    post(origin + "/api/comment/vote", json, function(resp) {
+    post(origin + "/api/comment/vote", json, function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         classRemove(upvote, "upvoted");
         classRemove(downvote, "downvoted");
         score.innerText = scorify(parseInt(score.innerText.replace(/[^\d-.]/g, "")) - newDirection + oldDirection);
-        upDownOnclickSet(upvote, downvote, commentHex, oldDirection);
+        var upDown = upDownOnclickSet(upvote, downvote, commentHex, oldDirection);
+        upvote = upDown[0];
+        downvote = upDown[1];
+        if (oldDirection > 0) {
+          classAdd(upvote, "upvoted");
+        } else if (oldDirection < 0) {
+          classAdd(downvote, "downvoted");
+        }
         return;
       } else {
         errorHide();
       }
+      // var likesAmount = $(ID_LIKES_AMOUNT);
+      // likesAmount.innerText = likeify(parseInt(likesAmount.innerText.split(" ")[0]) - 1)
     });
   }
 
@@ -1264,7 +1432,7 @@
       "markdown": markdown,
     };
 
-    post(origin + "/api/comment/edit", json, function(resp) {
+    post(origin + "/api/comment/edit", json, function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         return;
@@ -1304,7 +1472,7 @@
   }
 
 
-  global.editShow = function(id) {
+  global.editShow = function (id) {
     if (id in shownEdit && shownEdit[id]) {
       return;
     }
@@ -1328,7 +1496,7 @@
   };
 
 
-  global.editCollapse = function(id) {
+  global.editCollapse = function (id) {
     var editButton = $(ID_EDIT + id);
     var textarea = $(ID_SUPER_CONTAINER + id);
 
@@ -1346,7 +1514,7 @@
   }
 
 
-  global.replyShow = function(id) {
+  global.replyShow = function (id) {
     if (id in shownReply && shownReply[id]) {
       return;
     }
@@ -1367,7 +1535,7 @@
   };
 
 
-  global.replyCollapse = function(id) {
+  global.replyCollapse = function (id) {
     var replyButton = $(ID_REPLY + id);
     var el = $(ID_SUPER_CONTAINER + id);
 
@@ -1384,7 +1552,7 @@
   }
 
 
-  global.commentCollapse = function(id) {
+  global.commentCollapse = function (id) {
     var children = $(ID_CHILDREN + id);
     var button = $(ID_COLLAPSE + id);
 
@@ -1402,7 +1570,7 @@
   }
 
 
-  global.commentUncollapse = function(id) {
+  global.commentUncollapse = function (id) {
     var children = $(ID_CHILDREN + id);
     var button = $(ID_COLLAPSE + id);
 
@@ -1422,7 +1590,7 @@
 
   function parentMap(comments) {
     var m = {};
-    comments.forEach(function(comment) {
+    comments.forEach(function (comment) {
       var parentHex = comment.parentHex;
       if (!(parentHex in m)) {
         m[parentHex] = [];
@@ -1494,12 +1662,12 @@
   }
 
 
-  global.commentoAuth = function(data) {
+  global.commentoAuth = function (data) {
     var provider = data.provider;
     var id = data.id;
     var popup = window.open("", "_blank");
 
-    get(origin + "/api/commenter/token/new", function(resp) {
+    get(origin + "/api/commenter/token/new", function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         return;
@@ -1511,10 +1679,10 @@
 
       popup.location = origin + "/api/oauth/" + provider + "/redirect?commenterToken=" + resp.commenterToken;
 
-      var interval = setInterval(function() {
+      var interval = setInterval(function () {
         if (popup.closed) {
           clearInterval(interval);
-          selfGet(function() {
+          selfGet(function () {
             var loggedContainer = $(ID_LOGGED_CONTAINER);
             if (loggedContainer) {
               attrSet(loggedContainer, "style", "");
@@ -1523,9 +1691,9 @@
             if (commenterTokenGet() !== "anonymous") {
               remove($(ID_LOGIN));
             }
-
+            // refreshAll();
             if (id !== null) {
-              global.commentNew(id, resp.commenterToken, function() {
+              global.commentNew(id, resp.commenterToken, function () {
                 global.loginBoxClose();
               });
             } else {
@@ -1554,7 +1722,7 @@
   }
 
 
-  global.popupRender = function(id) {
+  global.popupRender = function (id) {
     var loginBoxContainer = $(ID_LOGIN_BOX_CONTAINER);
     var loginBox = create("div");
     var ssoSubtitle = create("div");
@@ -1628,7 +1796,7 @@
 
     var numOauthConfigured = 0;
     var oauthProviders = ["google", "twitter", "github", "gitlab"];
-    oauthProviders.forEach(function(provider) {
+    oauthProviders.forEach(function (provider) {
       if (configuredOauths[provider]) {
         var button = create("button");
 
@@ -1637,7 +1805,10 @@
 
         button.innerText = provider;
 
-        onclick(button, global.commentoAuth, {"provider": provider, "id": id});
+        onclick(button, global.commentoAuth, {
+          "provider": provider,
+          "id": id
+        });
 
         append(oauthButtons, button);
         numOauthConfigured++;
@@ -1652,7 +1823,10 @@
 
       button.innerText = "Single Sign-On";
 
-      onclick(button, global.commentoAuth, {"provider": "sso", "id": id});
+      onclick(button, global.commentoAuth, {
+        "provider": "sso",
+        "id": id
+      });
 
       append(ssoButton, button);
       append(ssoButtonContainer, ssoButton);
@@ -1700,14 +1874,14 @@
   }
 
 
-  global.forgotPassword = function() {
+  global.forgotPassword = function () {
     var popup = window.open("", "_blank");
     popup.location = origin + "/forgot?commenter=true";
     global.loginBoxClose();
   }
 
 
-  global.popupSwitch = function(id) {
+  global.popupSwitch = function (id) {
     var emailSubtitle = $(ID_LOGIN_BOX_EMAIL_SUBTITLE);
 
     if (oauthButtonsShown) {
@@ -1740,7 +1914,7 @@
       "password": password,
     };
 
-    post(origin + "/api/commenter/login", json, function(resp) {
+    post(origin + "/api/commenter/login", json, function (resp) {
       if (!resp.success) {
         global.loginBoxClose();
         errorShow(resp.message);
@@ -1756,7 +1930,7 @@
 
       remove($(ID_LOGIN));
       if (id !== null) {
-        global.commentNew(id, resp.commenterToken, function() {
+        global.commentNew(id, resp.commenterToken, function () {
           global.loginBoxClose();
         });
       } else {
@@ -1766,7 +1940,7 @@
   }
 
 
-  global.login = function(id) {
+  global.login = function (id) {
     var email = $(ID_LOGIN_BOX_EMAIL_INPUT);
     var password = $(ID_LOGIN_BOX_PASSWORD_INPUT);
 
@@ -1774,7 +1948,7 @@
   }
 
 
-  global.signup = function(id) {
+  global.signup = function (id) {
     var email = $(ID_LOGIN_BOX_EMAIL_INPUT);
     var name = $(ID_LOGIN_BOX_NAME_INPUT);
     var website = $(ID_LOGIN_BOX_WEBSITE_INPUT);
@@ -1787,7 +1961,7 @@
       "password": password.value,
     };
 
-    post(origin + "/api/commenter/new", json, function(resp) {
+    post(origin + "/api/commenter/new", json, function (resp) {
       if (!resp.success) {
         global.loginBoxClose();
         errorShow(resp.message);
@@ -1801,10 +1975,10 @@
   }
 
 
-  global.passwordAsk = function(id) {
+  global.passwordAsk = function (id) {
     var loginBox = $(ID_LOGIN_BOX);
     var subtitle = $(ID_LOGIN_BOX_EMAIL_SUBTITLE);
-    
+
     remove($(ID_LOGIN_BOX_EMAIL_BUTTON));
     remove($(ID_LOGIN_BOX_LOGIN_LINK_CONTAINER));
     remove($(ID_LOGIN_BOX_FORGOT_LINK_CONTAINER));
@@ -1893,7 +2067,7 @@
       "attributes": attributes,
     };
 
-    post(origin + "/api/page/update", json, function(resp) {
+    post(origin + "/api/page/update", json, function (resp) {
       if (!resp.success) {
         errorShow(resp.message);
         return
@@ -1906,20 +2080,20 @@
   }
 
 
-  global.threadLockToggle = function() {
+  global.threadLockToggle = function () {
     var lock = $(ID_MOD_TOOLS_LOCK_BUTTON);
 
     isLocked = !isLocked;
 
     lock.disabled = true;
-    pageUpdate(function() {
+    pageUpdate(function () {
       lock.disabled = false;
       refreshAll();
     });
   }
 
 
-  global.commentSticky = function(commentHex) {
+  global.commentSticky = function (commentHex) {
     if (stickyCommentHex !== "none") {
       var sticky = $(ID_STICKY + stickyCommentHex);
       classRemove(sticky, "option-unsticky");
@@ -1932,7 +2106,7 @@
       stickyCommentHex = commentHex;
     }
 
-    pageUpdate(function() {
+    pageUpdate(function () {
       var sticky = $(ID_STICKY + commentHex);
       if (stickyCommentHex === commentHex) {
         classRemove(sticky, "option-sticky");
@@ -1982,7 +2156,7 @@
   }
 
 
-  global.loadCssOverride = function() {
+  global.loadCssOverride = function () {
     if (cssOverride === undefined) {
       global.allShow();
     } else {
@@ -1991,7 +2165,7 @@
   }
 
 
-  global.allShow = function() {
+  global.allShow = function () {
     var mainArea = $(ID_MAIN_AREA);
     var modTools = $(ID_MOD_TOOLS);
     var loggedContainer = $(ID_LOGGED_CONTAINER);
@@ -2008,7 +2182,7 @@
   }
 
 
-  global.loginBoxClose = function() {
+  global.loginBoxClose = function () {
     var mainArea = $(ID_MAIN_AREA);
     var loginBoxContainer = $(ID_LOGIN_BOX_CONTAINER);
 
@@ -2016,17 +2190,18 @@
     classRemove(root, "root-min-height");
 
     attrSet(loginBoxContainer, "style", "display: none");
+    refreshAll()
   }
 
 
-  global.loginBoxShow = function(id) {
+  global.loginBoxShow = function (id) {
     var mainArea = $(ID_MAIN_AREA);
     var loginBoxContainer = $(ID_LOGIN_BOX_CONTAINER);
 
     global.popupRender(id);
 
     classAdd(mainArea, "blurred");
-    
+
     attrSet(loginBoxContainer, "style", "");
 
     window.location.hash = ID_LOGIN_BOX_CONTAINER;
@@ -2078,7 +2253,7 @@
   }
 
 
-  global.main = function(callback) {
+  global.main = function (callback) {
     root = $(ID_ROOT);
     if (root === null) {
       console.log("[commento] error: no root element with ID '" + ID_ROOT + "' found");
@@ -2103,10 +2278,10 @@
     var footer = footerLoad();
     cssLoad(cdn + "/css/commento.css", "window.commento.loadCssOverride()");
 
-    selfGet(function() {
-      commentsGet(function() {
+    selfGet(function () {
+      commentsGet(function () {
         modToolsCreate();
-        rootCreate(function() {
+        rootCreate(function () {
           commentsRender();
           append(root, footer);
           loadHash();
@@ -2138,7 +2313,7 @@
   }
 
 
-  var readyLoad = function() {
+  var readyLoad = function () {
     var readyState = document.readyState;
 
     if (readyState === "loading") {

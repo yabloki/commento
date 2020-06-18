@@ -8,6 +8,7 @@ type comment struct {
 	CommentHex   string    `json:"commentHex"`
 	Domain       string    `json:"domain,omitempty"`
 	Path         string    `json:"url,omitempty"`
+	PostID       string    `json:"postId"`
 	CommenterHex string    `json:"commenterHex"`
 	Markdown     string    `json:"markdown"`
 	Html         string    `json:"html"`

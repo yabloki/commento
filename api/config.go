@@ -7,6 +7,7 @@ import (
 	"strings"
 )
 
+//TODO we need to configu FORBID NEW OWNERS
 func configParse() error {
 	binPath, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {

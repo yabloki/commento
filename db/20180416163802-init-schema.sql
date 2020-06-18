@@ -57,10 +57,11 @@ CREATE TABLE IF NOT EXISTS moderators (
 
 CREATE TABLE IF NOT EXISTS commenters (
   commenterHex             TEXT          NOT NULL  UNIQUE  PRIMARY KEY      ,
-  email                    TEXT          NOT NULL                           ,
+  email                    TEXT          NOT NULL  UNIQUE                   ,
   name                     TEXT          NOT NULL                           ,
   link                     TEXT          NOT NULL                           ,
   photo                    TEXT          NOT NULL                           ,
+  cntTokens                BIGINT        NOT NULL DEFAULT 0                 ,
   provider                 TEXT          NOT NULL                           ,
   joinDate                 TIMESTAMP     NOT NULL                           ,
   state                    TEXT          NOT NULL  DEFAULT 'ok'
@@ -76,12 +77,14 @@ CREATE TABLE IF NOT EXISTS comments (
   commentHex               TEXT          NOT NULL  UNIQUE  PRIMARY KEY      ,
   domain                   TEXT          NOT NULL                           ,
   path                     TEXT          NOT NULL                           ,
+  postId                   TEXT          NOT NULL                           ,
   commenterHex             TEXT          NOT NULL                           ,
   markdown                 TEXT          NOT NULL                           ,
   html                     TEXT          NOT NULL                           ,
   parentHex                TEXT          NOT NULL                           ,
   score                    INTEGER       NOT NULL  DEFAULT 0                ,
-  state                    TEXT          NOT NULL  DEFAULT 'unapproved'     , -- not a BOOLEAN because I expect more states in the future
+  state                    TEXT          NOT NULL  DEFAULT 'unapproved'     , 
+  paid                     BOOLEAN       NOT NULL  DEFAULT false            ,
   creationDate             TIMESTAMP     NOT NULL
 );
 
@@ -102,6 +105,7 @@ CREATE TABLE IF NOT EXISTS votes (
   commentHex               TEXT          NOT NULL                           ,
   commenterHex             TEXT          NOT NULL                           ,
   direction                INTEGER       NOT NULL                           ,
+  paid                     BOOLEAN       NOT NULL  DEFAULT false            ,
   voteDate                 TIMESTAMP     NOT NULL
 );
 

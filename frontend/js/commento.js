@@ -70,7 +70,7 @@
 
 
   var origin = "[[[.Origin]]]";
-  var fakeOrigin = "http://localhost:3000"
+  var coreOrigin = "http://core.2cents.media";
   var cdn = "[[[.CdnPrefix]]]";
   var root = null;
   var pageId = document.getElementById("url_full").getAttribute("url").replace(/\/$/, "");
@@ -495,7 +495,7 @@
     var json = {
       "postId":  document.getElementById("post_id").getAttribute("post_id").replace(/\/$/, ""),
     };
-    postJson(fakeOrigin + "/post", json, function (data) {
+    postJson(coreOrigin + "/post", json, function (data) {
       vaultData = { abi: data.abi, address: data.address, price: data.price }
       var vault = new web3.eth.Contract(data.abi, data.address, { gas: 5000000 })
       vault.methods.token().call(function (err, r) {

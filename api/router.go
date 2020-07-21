@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/handlers"
+	"github.com/gorilla/mux"
 )
 
 func routesServe() error {
@@ -25,7 +26,7 @@ func routesServe() error {
 
 	origins := handlers.AllowedOrigins([]string{"*"})
 	headers := handlers.AllowedHeaders([]string{"X-Requested-With"})
-	methods := handlers.AllowedMethods([]string{"GET", "POST"})
+	methods := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"})
 
 	addrPort := os.Getenv("BIND_ADDRESS") + ":" + os.Getenv("PORT")
 

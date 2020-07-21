@@ -26,7 +26,7 @@ func routesServe() error {
 
 	origins := handlers.AllowedOrigins([]string{"http://core.2cents.media", "http://2cents.media"})
 	headers := handlers.AllowedHeaders([]string{"X-Requested-With"})
-	methods := handlers.AllowedMethods([]string{"GET", "POST"})
+	methods := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"})
 
 	addrPort := os.Getenv("BIND_ADDRESS") + ":" + os.Getenv("PORT")
 

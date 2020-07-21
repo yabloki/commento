@@ -10,6 +10,11 @@ import (
 )
 
 func ssoCallbackHandler(w http.ResponseWriter, r *http.Request) {
+
+	if (*r).Method == "OPTIONS" {
+		return
+	}
+
 	payloadHex := r.FormValue("payload")
 	signature := r.FormValue("hmac")
 

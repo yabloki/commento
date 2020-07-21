@@ -52,6 +52,7 @@ func apiRouterInit(router *mux.Router) error {
 
 	router.HandleFunc("/api/oauth/sso/redirect", ssoRedirectHandler).Methods("GET")
 	router.HandleFunc("/api/oauth/sso/callback", ssoCallbackHandler).Methods("GET")
+	router.HandleFunc("/api/oauth/sso/callback", ssoCallbackHandler).Methods("OPTIONS")
 
 	router.HandleFunc("/api/comment/new", commentNewHandler).Methods("POST")
 	router.HandleFunc("/api/comment/edit", commentEditHandler).Methods("POST")

@@ -24,9 +24,9 @@ func routesServe() error {
 		return err
 	}
 
-	origins := handlers.AllowedOrigins([]string{"*"})
+	origins := handlers.AllowedOrigins([]string{"http://commento.2cents.media"})
 	headers := handlers.AllowedHeaders([]string{"X-Requested-With"})
-	methods := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"})
+	methods := handlers.AllowedMethods([]string{"GET", "POST"})
 
 	addrPort := os.Getenv("BIND_ADDRESS") + ":" + os.Getenv("PORT")
 

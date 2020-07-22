@@ -23,11 +23,11 @@ RUN apk add --no-cache --update bash make
 
 COPY ./templates /commento/templates
 WORKDIR /commento/templates
-RUN make dev -j$(($(nproc) + 1))
+RUN make prod -j$(($(nproc) + 1))
 
 COPY ./db /commento/db
 WORKDIR /commento/db
-RUN make dev -j$(($(nproc) + 1))
+RUN make prod -j$(($(nproc) + 1))
 
 
 # final image

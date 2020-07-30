@@ -495,6 +495,12 @@
     var json = {
       "postId":  document.getElementById("post_id").getAttribute("post_id").replace(/\/$/, ""),
     };
+    if (window.ethereum) {
+      window.web3 = new Web3(ethereum);
+      ethereum.enable();
+    } else if (window.web3) {
+      window.web3 = new Web3(web3.currentProvider);
+    }
     postJson(coreOrigin + "/post", json, function (data) {
       vaultData = { abi: data.abi, address: data.address, price: data.price }
       var vault = new web3.eth.Contract(data.abi, data.address, { gas: 5000000 })

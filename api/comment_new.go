@@ -74,7 +74,7 @@ func getCommentPrice(postID string) (uint64, error) {
 	}
 
 	//TODO probably need to use something like os.Getenv("ORIGIN")
-	resp, err := http.Post("http://core.2cents.media/post", "application/json", bytes.NewBuffer(bytesRepresentation))
+	resp, err := http.Post("https://core.2cents.media/post", "application/json", bytes.NewBuffer(bytesRepresentation))
 	if err != nil {
 		logger.Errorf("error getting price of comment: %v", err)
 		return 0, errorInternal

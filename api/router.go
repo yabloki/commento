@@ -24,7 +24,7 @@ func routesServe() error {
 		return err
 	}
 
-	origins := handlers.AllowedOrigins([]string{"http://core.2cents.media", "http://2cents.media"})
+	origins := handlers.AllowedOrigins([]string{"https://core.2cents.media", "https://2cents.media"})
 	headers := handlers.AllowedHeaders([]string{"X-Requested-With", "content-type"})
 	methods := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"})
 

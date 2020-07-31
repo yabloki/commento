@@ -70,7 +70,7 @@
 
 
   var origin = "[[[.Origin]]]";
-  var coreOrigin = "http://core.2cents.media";
+  var coreOrigin = "https://core.2cents.media";
   var cdn = "[[[.CdnPrefix]]]";
   var root = null;
   var pageId = document.getElementById("url_full").getAttribute("url").replace(/\/$/, "");
